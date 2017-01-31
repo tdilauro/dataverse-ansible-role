@@ -8,8 +8,8 @@ Finally, it attempts to apply local instance configuration, metadata block (data
 This role is heavily based on [dataverse-ansible](https://github.com/IQSS/dataverse-ansible) project.
 
 ### Usage
-  $ ansible-playbook [--vault-password-file <vault-password-file>] [-K] -i <dataverse-host-name>, [-u <ssh-username>] dataverse.pb
-  # e.g.: $ ansible-playbook --vault-password-file ~/.ansible/.vault-pw -K -i myhost.domain.edu, dataverse.pb
+  * $ ansible-playbook [--vault-password-file <vault-password-file>] [-K] -i <dataverse-host-name>, [-u <ssh-username>] dataverse.pb
+  * e.g.: $ ansible-playbook --vault-password-file ~/.ansible/.vault-pw -K -i myhost.domain.edu, dataverse.pb
 
 ## Notes
 * The comma after the hostname is needed if only one host is listed, which is probably the normal case.
