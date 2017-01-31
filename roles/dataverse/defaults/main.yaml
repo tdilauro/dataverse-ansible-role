@@ -1,0 +1,125 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+# The default role variables in this file may be overridden by variables set
+# in the <role-name>/vars directory or other file or command-line specification.
+
+# Some useful settings can be found here on the DV4 configuration page:
+# - http://guides.dataverse.org/en/latest/installation/config.html
+
+---
+
+# DO NOT INCLUDE PASSWORDS in this file!
+# Variables with a "_protected" suffix are probably in an ansible vault.
+
+# Dataverse version
+dataverse_version: 4.6
+dv_solr_schema_version: "{{ dataverse_version }}"
+instance_ui_customization_version: "{{ dataverse_version }}"
+
+# Service URL hostname (also used by http_server.name below)
+dataverse_service_name: "{{ inventory_hostname }}"
+dataverse_content_directory: "/usr/local/dvn/data"
+dataverse_mailrelay: localhost
+dataverse_copyright_addon: ""
+
+# A few settings
+dataverse_allow_signups: false
+
+# DOI settings
+dv_doi_service: EZID
+dv_doi_prefix: "10.5072/FK2"
+dv_doi_user: apitest
+dv_doi_pass: apitest
+
+# Could use inventory_hostname, ansible_fqdn, or ansible_nodename
+dataverse_host_address: "{{ inventory_hostname }}"
+dataverse_app_name: dataverse
+
+# Local instance Metadata Blocks
+# The subdirectory is relative to ansible's role/<role>/{files|templates|tasks}
+# Currently, the definitions are stored in "{{blockname}}.tsv"
+instance_mdblocks_dir: "{{ role_path }}/files/dv-mdblocks"
+instance_md_blocks: []
+
+# instance_server as "<schema>://<host><:port (optional)>"
+instance_api_server: "http://localhost:8080"
+instance_api: "{{ instance_api_server }}/api"
+instance_keyhdr: "X-Dataverse-key: {{ instance_apikey }}"
+instance_api_cmd_prefix: "curl -H '{{ instance_keyhdr }}' {{ instance_api }}"
+
+# systemd/systemctl configuration
+systemd_dir: "/etc/systemd/system"
+
+# Apache httpd
+httpd_rpm_pkgs:
+  - httpd
+  - mod_ssl
+httpd_config_dir: "/etc/httpd/conf.d"
+httpd_cert_basedir: "/etc/pki/tls"
+httpd_active_cert: "/etc/pki/tls/certs/star_mse.jhu.edu.crt"
+http_server:
+  name: "{{ instance_service_name }}"
+  aliases:
+    - "{{ inventory_hostname }}"
+  ssl_port: "443"
+
+
+# DV shibboleth
+# dv_shib: Do we want Shibboleth as part of our instance?
+dv_shib: false
+shib_rpm_repo: "http://download.opensuse.org/repositories/security:/shibboleth/CentOS_7/security:shibboleth.repo"
+shib_config_dir: "/etc/shibboleth"
+
+# Solr
+dv_solr_root: /usr/local/solr
+dv_solr_schema_dir: "{{ dv_solr_root }}/example/solr/collection1/conf/"
+dv_solr_version: 4.9.1
+# dataverse version from which the schema will come
+# NB: not always the same as as the target DV version
+dv_solr_group: solr
+dv_solr_user: solr
+dv_solr_uid: 1110
+dv_solr_gid: 1110
+
+# postgres database config
+db_rpm_repo: "http://yum.postgresql.org/9.3/redhat/rhel-7-x86_64/pgdg-centos93-9.3-2.noarch.rpm"
+db_rpm_pkgs:
+  - perl
+  - perl-DBI
+  - perl-DBD-Pg
+  - python-psycopg2
+  - postgresql93-server
+db_rpm_setup_command: "/usr/pgsql-9.3/bin/postgresql93-setup initdb"
+db_rpm_data_dir: "/var/lib/pgsql/9.3/data"
+db_rpm_service: "postgresql-9.3"
+
+dv_db_admin_user: postgres
+dv_db_admin_pass: "{{ dv_db_pass_protected }}"
+dv_db_name: dvndb
+dv_db_user: dvnapp
+dv_db_pass: "{{ dv_db_pass_protected }}"
+dv_db_host: localhost
+dv_db_port: 5432
+
+# Glassfish (modified for DV 4)
+dv_gf_distro: http://dlc-cdn.sun.com/glassfish/4.1/release/glassfish-4.1.zip
+dv_gf_weld_jar: http://central.maven.org/maven2/org/jboss/weld/weld-osgi-bundle/2.2.10.SP1/weld-osgi-bundle-2.2.10.SP1-glassfish4.jar
+dv_gf_grizzly_jar: http://guides.dataverse.org/en/latest/_static/installation/files/issues/2180/grizzly-patch/glassfish-grizzly-extra-all.jar
+# user/group created only if corresponding name is not "root"
+dv_gf_user: glassfish
+dv_gf_group: glassfish
+dv_gf_uid: 1100
+dv_gf_gid: 1100
+dv_gf_root: /usr/local/glassfish4
+dv_gf_domain: domain1
+dv_gf_adminuser: admin
+dv_gf_adminpass: "{{ dv_gf_adminpass_protected }}"
+dv_gf_wait_secs: 180
+dv_gf_logformat: ulf
+dv_gf_memheap: 1024
+
+rserve_host: "{{ dataverse_host_address }}"
+rserve_user: rserve
+rserve_pass: "{{ rserve_pass_protected }}"
+rserve_port: 6311

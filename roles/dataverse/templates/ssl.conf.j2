@@ -1,0 +1,69 @@
+Listen {{ http_server.ssl_port }} https
+
+SSLPassPhraseDialog exec:/usr/libexec/httpd-ssl-pass-dialog
+SSLSessionCache         shmcb:/run/httpd/sslcache(512000)
+SSLSessionCacheTimeout  300
+SSLRandomSeed startup file:/dev/urandom  256
+SSLRandomSeed connect builtin
+SSLCryptoDevice builtin
+
+<VirtualHost _default_:{{ http_server.ssl_port }}>
+
+  ServerName {{ http_server.name }}:443
+  {% for alias in http_server.aliases -%}
+  ServerAlias {{ alias }}
+  {% endfor -%}
+  ErrorLog logs/ssl_error_log
+  TransferLog logs/ssl_access_log
+  LogLevel warn
+
+  SSLEngine on
+  SSLProtocol all -SSLv2
+  SSLCipherSuite HIGH:MEDIUM:!aNULL:!MD5
+  #SSLCertificateFile /etc/pki/tls/certs/localhost.crt
+  #SSLCertificateKeyFile /etc/pki/tls/private/localhost.key
+
+  {% set cert_basename = 'star_' + http_server.name.split('.')[-3:] | join('.') -%}
+  # Certificates: {{ cert_basename }}
+  SSLCertificateFile      {{ httpd_cert_basedir }}/certs/{{ cert_basename }}.crt
+  SSLCertificateKeyFile   {{ httpd_cert_basedir }}/private/{{ cert_basename }}.key
+  SSLCertificateChainFile {{ httpd_cert_basedir }}/certs/{{ cert_basename }}_interim.crt
+  {% for alias in http_server.aliases -%}
+  {% set cert_basename = 'star_' + alias.split('.')[-3:] | join('.') -%}
+  # Certificates: {{ cert_basename }}
+  # SSLCertificateFile      {{ httpd_cert_basedir }}/certs/{{ cert_basename }}.crt
+  # SSLCertificateKeyFile   {{ httpd_cert_basedir }}/private/{{ cert_basename }}.key
+  # SSLCertificateChainFile {{ httpd_cert_basedir }}/certs/{{ cert_basename }}_interim.crt
+  {% endfor -%}
+
+  <Files ~ "\.(cgi|shtml|phtml|php3?)$">
+    SSLOptions +StdEnvVars
+  </Files>
+  <Directory "/var/www/cgi-bin">
+    SSLOptions +StdEnvVars
+  </Directory>
+
+  CustomLog logs/ssl_request_log \
+          "%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b"
+
+  # don't pass paths used by rApache and TwoRavens to Glassfish
+  ProxyPassMatch ^/RApacheInfo$ !
+  ProxyPassMatch ^/custom !
+  ProxyPassMatch ^/dataexplore !
+  {% if dv_shib -%}
+  # don't pass paths used by Shibboleth to Glassfish
+  ProxyPassMatch ^/Shibboleth.sso !
+  ProxyPassMatch ^/shibboleth-ds !
+  {% endif -%}
+  # pass everything else to Glassfish
+  ProxyPass / ajp://localhost:8009/
+
+  {% if dv_shib -%}
+  <Location /shib.xhtml>
+    AuthType shibboleth
+    ShibRequestSetting requireSession 1
+    require valid-user
+  </Location>
+  {% endif -%}
+
+</VirtualHost>

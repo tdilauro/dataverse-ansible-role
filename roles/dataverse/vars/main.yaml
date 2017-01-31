@@ -1,0 +1,65 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+# Some useful settings can be found here on the DV4 configuration page:
+# - http://guides.dataverse.org/en/latest/installation/config.html
+
+# These variables override those specified in ../defaults/main.yaml
+# See that file if a variable you are looking for does not appear here.
+
+# Changes to some of values here after intallation require manual changes to the
+# glassfish domain configuration[1] and a restart of the glassfish service.
+# [1] "{{ dv_gf_root }}/glassfish/domains/{{ dv_gf_domain }}/config/domain.xml
+# [1] e.g.: "/usr/local/glassfish4/glassfish/domains/domain1/config/domain.xml
+
+---
+
+# DO NOT INCLUDE PASSWORDS in this file!
+# Variables with a "_protected" suffix are probably in an ansible vault.
+
+
+# Could use inventory_hostname, ansible_fqdn, or ansible_nodename
+dataverse_service_name: "archive.data.jhu.edu"
+dataverse_content_directory: "/mnt/dvn/dv-content"
+dataverse_service_email: "JHU Data Archive Support <jhuda-admin@dkc.jhu.edu>"
+dataverse_google_analytics_key: "{{ google_analytics_key_protected }}"
+
+# DOI service (uncomment these for instances planned for production)
+#dv_doi_service: EZID
+#dv_doi_prefix: "10.7281"
+#dv_doi_user: "{{ dv_doi_user_protected }}"
+#dv_doi_pass: "{{ dv_doi_pass_protected }}"
+
+# Local instance Metadata Blocks
+# The subdirectory is relative to ansible's role/<role>/{files|templates|tasks}
+# Currently, the definitions are stored in "{{blockname}}.tsv"
+instance_mdblocks_dir: "{{ role_path }}/files/dv-mdblocks"
+instance_md_blocks:
+  - dataContext
+  - jhuSoftware
+
+# local configuration
+dataverse_mailrelay: smtp.johnshopkins.edu
+dataverse_copyright_addon: ", The Johns Hopkins University"
+dataverse_allow_signups: false
+
+# HTTP server front-end config
+http_server:
+  name: "{{ dataverse_service_name }}"
+  aliases:
+    - "{{ inventory_hostname }}"
+  ssl_port: "443"
+
+# shibboleth enabled
+dv_shib: false
+
+# some Glassfish Java EE application container service overrides
+dv_gf_wait_secs: 300
+dv_gf_memheap: 1024
+
+# instance_server as "<schema>://<host><:port (optional)>"
+instance_apikey: "{{ instance_apikey_protected }}"
+instance_api_server: "http://localhost:8080"
+instance_api: "{{ instance_api_server }}/api"
+instance_keyhdr: "X-Dataverse-key: {{ instance_apikey }}"
+instance_api_cmd_prefix: "curl -H '{{ instance_keyhdr }}' {{ instance_api }}"

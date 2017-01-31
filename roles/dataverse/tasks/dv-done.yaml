@@ -1,0 +1,11 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+############################################################
+# Done!
+############################################################
+
+- name: Fin
+  debug: msg="Dataverse installation complete! Please check output logs in /tmp for further review."

@@ -1,0 +1,86 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# install pre-req packages (RedHat/CentOS 7)
+###############################################################################
+
+- name: install Glassfish pre-reqs for RedHat/CentOS 7
+  yum: name="{{item}}" state=latest
+  with_items:
+    - java-1.8.0-openjdk-devel
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+
+###############################################################################
+# Install GlassFish (w/ required modifications)
+###############################################################################
+
+- name: download and unzip glassfish.
+  unarchive: src="{{ dv_gf_distro }}" dest=/tmp copy=no
+
+- name: ensure dv_gf_root exists
+  file: path={{ dv_gf_root }} state=directory
+        owner=root group=root mode=0755
+
+- name: copy glassfish into desired glassfish root.
+  shell: "/bin/cp -r /tmp/glassfish4/* {{ dv_gf_root }}"
+
+- name: remove old weld jar
+  file: path={{ dv_gf_root }}/glassfish/modules/weld-osgi-bundle.jar state=absent
+
+- name: get patched weld jar
+  get_url: url="{{ dv_gf_weld_jar }}"
+        dest={{ dv_gf_root }}/glassfish/modules owner=root group=root mode=0644
+
+- name: remove old grizzly jar
+  file: name={{ dv_gf_root }}/glassfish/modules/glassfish-grizzly-extra-all.jar state=absent
+
+- name: get patched grizzly jar
+  get_url: url="{{ dv_gf_grizzly_jar }}"
+        dest={{ dv_gf_root }}/glassfish/modules owner=root group=root mode=0644
+
+- name: clean up glassfish distro files
+  file: path="/tmp/glassfish4" state=absent
+
+###############################################################################
+# Glassfish filesystem ownership (one of these is the data directory, so
+# do not repurpose this chunk for deletion)
+###############################################################################
+
+- name: glassfish user needs to own some of the subdirectories to run non-root
+  file: path="{{ item }}" state=directory recurse=yes
+        owner="{{ dv_gf_user }}" group="{{ dv_gf_group }}"
+  with_items:
+    - "{{ dv_gf_root }}/glassfish/domains/{{ dv_gf_domain }}"
+    - "{{ dataverse_content_directory }}"
+
+###############################################################################
+# Glassfish system service configuration (RedHat/CentOS 7)
+###############################################################################
+
+- name: install glassfish systemd conf file for RedHat / CentOS7
+  template: src=glassfish.service.j2 dest="{{ systemd_dir }}/glassfish.service"
+        owner=root group=root mode=0644
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+- name: reload systemd on RedHat/CentOS7
+  shell: systemctl daemon-reload
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+- name: enable glassfish on RedHat/CentOS7 - but don't start it with systemd during Ansible installation
+  service: name=glassfish enabled=yes
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+- name: start glassfish with asadmin so subsequent Ansible-initiated restarts succeed on RedHat/CentOS
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "nohup {{ dv_gf_root }}/bin/asadmin restart-domain"
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"

@@ -1,0 +1,29 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# JHU DMS custom metadata blocks Dataverse DB updates
+###############################################################################
+
+- name: copy metadata block configuration files
+  copy: src="{{ instance_mdblocks_dir }}" dest=/tmp force=yes
+  when: load_mdblocks == true
+
+- name: load metadata blocks - NAControlledVocabularyValue (once)
+  shell: "{{ instance_api_cmd_prefix}}/admin/datasetfield/loadNAControlledVocabularyValue -sS"
+  args:
+    warn: no    # don't warn about using curl
+  when: load_mdblocks == true
+
+- name: load metadata blocks - load the mdblock definition (once per metadata block)
+  shell: "{{ instance_api_cmd_prefix}}/admin/datasetfield/load -X POST --data-binary @/tmp/dv-mdblocks/{{item}}.tsv -H 'Content-type: text/tab-separated-values' -sS"
+  args:
+    warn: no    # don't warn about using curl
+  with_items: "{{ instance_md_blocks }}"
+  when: load_mdblocks == true
+
+- name: remove tmp copies of metadata block config files
+  file: path=/tmp/dv-mdblocks state=absent
+  when: load_mdblocks == true

@@ -1,0 +1,61 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# Postgres support
+###############################################################################
+
+- name: install database RPM repo on Redhat / CentOS 7.
+  yum: name="{{ db_rpm_repo }}" state=present
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+- name: install dataverse database on RedHat / CentOS 7.
+  yum: name="{{item}}" state=latest
+  with_items: "{{ db_rpm_pkgs }}"
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+
+- name: init postgres-9.3 on RedHat / CentOS 7.
+  shell: "{{ db_rpm_setup_command }}"
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+  register: command_result
+  # commenting out failed_when / adding ignore_errors: True due to bug in ansible 2 failed when
+  # failure is handled in next task
+  ignore_errors: True
+  #failed_when:
+  #  - "command_result.rc !=0"
+  #  - "'Data directory is not empty!' not in command_result.stdout"
+
+- name: temporarily handle pg initdb failure conditions
+  fail: msg="{{ db_rpm_setup_command }} --> failed".
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+        and 'Data directory is not empty!' not in command_result.stdout
+
+- name: install pg_hba.conf on RedHat / CentOS 7.
+  copy: src=pg_hba.conf dest="{{ db_rpm_data_dir }}"
+        owner=postgres group=postgres mode=0644
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+- name: enable postgres-9.3 on RedHat / CentOS 7.
+  service: name="{{ db_rpm_service }}" enabled=yes state=started
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+- name: create dataverse postgres database
+  postgresql_db:
+    name: "{{ dv_db_name }}"
+    encoding: "UTF-8"
+
+- name: create dataverse postgres user, set permissions
+  postgresql_user:
+    db: "{{ dv_db_name }}"
+    name: "{{ dv_db_user }}"
+    password: "{{ dv_db_pass }}"
+    role_attr_flags: "NOSUPERUSER,CREATEDB,CREATEROLE,INHERIT,LOGIN"

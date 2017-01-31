@@ -1,0 +1,35 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+############################################################
+# Customize some glassfish settings (not in dataverse API)
+############################################################
+
+- name: get a list of the JVM Option keys to remove
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "nohup {{ dv_gf_root }}/bin/asadmin list-jvm-options | grep -- '^{{ item }}'"
+  register: jvm_options_to_delete
+  with_items:
+    - "-Ddoi.username="
+    - "-Ddoi.password="
+
+- name: save single list of all JVM options to be deleted
+  set_fact:
+    jvm_options_to_delete_string: "{{ jvm_options_to_delete.results | map(attribute='stdout') | list | join('\n') }}"
+
+- name: delete the designated JVM options
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "nohup {{ dv_gf_root }}/bin/asadmin delete-jvm-options -- {{ item }}"
+  with_items: "{{ jvm_options_to_delete_string.splitlines() }}"
+
+- name: add new JVM options
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "nohup {{ dv_gf_root }}/bin/asadmin create-jvm-options -- {{ item }}"
+  with_items:
+    - "-Ddoi.username={{ dv_doi_user }}"
+    - "-Ddoi.password={{ dv_doi_pass }}"

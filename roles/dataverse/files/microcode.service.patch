@@ -1,0 +1,11 @@
+--- /usr/lib/systemd/system/microcode.service.orig	2017-01-09 09:42:34.000000000 -0500
++++ /usr/lib/systemd/system/microcode.service	2017-01-18 21:09:27.217590198 -0500
+@@ -7,7 +7,7 @@
+ [Service]
+ Type=oneshot
+ RemainAfterExit=no
+-ExecStart=/usr/bin/bash -c "grep -l GenuineIntel /proc/cpuinfo | xargs grep -l "model.*79" > /dev/null || echo 1 > /sys/devices/system/cpu/microcode/reload"
++ExecStart=/usr/bin/bash -c 'grep -l GenuineIntel /proc/cpuinfo | xargs grep -l "model.*79" > /dev/null || echo 1 > /sys/devices/system/cpu/microcode/reload'
+ 
+ [Install]
+ WantedBy=basic.target

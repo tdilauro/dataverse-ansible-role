@@ -1,0 +1,50 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# install httpd (RedHat/CentOS 7)
+###############################################################################
+
+- name: install Apache httpd-related packages for RedHat/CentOS 7
+  yum: name="{{item}}" state=latest
+  with_items: "{{ httpd_rpm_pkgs }}"
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+
+###############################################################################
+# HTTP server config
+#
+# Certs/keys are provided as part of VM provisioning, so no longer need to be
+# pushed to the server.
+#
+# NB: Syntax of validation command "apachectl configtest -f %s" is incorrect,
+#     but Ansible (2.2.0.0_2) requires %s to be passed
+###############################################################################
+
+
+- name: install http redirect template (redirect http -> https)
+  template: src=http.redirect.conf.j2 dest="{{ httpd_config_dir }}/http.redirect.conf"
+        owner=root group=root mode=0644
+
+- name: install mod_ssl template
+  template: src=ssl.conf.j2 dest="{{ httpd_config_dir }}/ssl.conf"
+        force=yes owner=root group=root mode=0644
+
+- name: prevent Dataverse user self-signup with rewrite rules
+  blockinfile:
+    dest: "{{ httpd_config_dir }}/ssl.conf"
+    state: present
+    insertbefore: "</VirtualHost>"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK Dataverse 4 - prevent user self-signup"
+    content: |
+      RewriteEngine On
+      RewriteCond %{QUERY_STRING}          \beditMode=CREATE\b        [NC]
+      RewriteCond %{QUERY_STRING}          !\boverride=(yes|true)\b   [NC]
+      RewriteRule ^/?dataverseuser.xhtml$  -                          [NC,L,R=404]
+    validate: apachectl configtest -f %s
+
+- name: start httpd and enable on system startup
+  service: name=httpd enabled=yes state=started

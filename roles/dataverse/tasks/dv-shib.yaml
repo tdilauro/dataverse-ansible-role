@@ -1,0 +1,57 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# Shibboleth, if desired
+###############################################################################
+
+- name: print value of dv_shib
+  debug: var=dv_shib
+
+- name: force failure until Shibboleth config updated and this task removed
+  fail: msg="Please configure Shibboleth and comment out this task"
+  when: dv_shib == true
+
+- name: install shibboleth repo for RedHat/CentOS7
+  get_url: url="{{ shib_rpm_repo }}"
+        dest=/etc/yum.repos.d owner=root group=root mode=0644
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+        and dv_shib == true
+
+- name: install Shibboleth RPMs for RedHat/CentOS7
+  yum: name="{{ item }}" state=latest
+  with_items:
+    - shibboleth
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+        and dv_shib == true
+
+- name: install shibboleth2.xml template
+  template: src=shibboleth2.xml.j2 dest="{{ shib_config_dir }}/shibboleth2.xml"
+        force=yes owner=root group=root mode=0644
+  when: dv_shib == true
+
+- name: copy attribute-map.xml file
+  copy: src=attribute-map.xml dest="{{ shib_config_dir }}/attribute-map.xml"
+        force=yes owner=root group=root mode=0644
+  when: dv_shib == true
+
+- name: copy TestShib IdP metadata XML file
+  copy: src=dataverse-idp-metadata.xml dest="{{ shib_config_dir }}/dataverse-idp-metadata.xml"
+        force=yes owner=root group=root mode=0644
+  when: dv_shib == true
+
+- name: enable and start shibd on RedHat / CentOS 7.
+  service: name=shibd enabled=yes state=started
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+        and dv_shib == true
+
+- name: enable and start httpd on RedHat / CentOS 7.
+  service: name=httpd enabled=yes state=started
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+        and dv_shib == true

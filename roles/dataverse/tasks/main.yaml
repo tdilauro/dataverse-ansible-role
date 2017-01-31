@@ -1,0 +1,20 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+- include: dv-prereqs.yaml
+- include: dv-shib.yaml
+- include: dv-httpd.yaml
+- include: dv-users.yaml
+- include: dv-solr.yaml
+- include: dv-database.yaml
+- include: dv-glassfish.yaml
+- include: dataverse-install.yaml
+- include: dv-custom-glassfish.yaml
+- include: dv-custom-mdblock-solr.yaml
+- include: dv-custom-ui.yaml
+- include: dv-post-deploy.yaml
+- include: dv-custom-mdblocks-db.yaml
+- include: dv-custom-settings.yaml
+- include: dv-done.yaml

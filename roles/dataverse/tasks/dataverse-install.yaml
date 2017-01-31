@@ -1,0 +1,58 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+############################################################
+# Download and deploy Dataverse
+############################################################
+
+- name: download and unzip installer for dataverse {{ dataverse_version }}
+  unarchive: src=https://github.com/IQSS/dataverse/releases/download/v{{ dataverse_version }}/dvinstall.zip
+             dest=/tmp copy=no
+
+- name: install jdbc driver
+  shell: "/bin/cp /tmp/dvinstall/pgdriver/postgresql-9.1-902.jdbc4.jar {{ dv_gf_root }}/glassfish/lib/"
+
+#- name: need to modify how jhove config (and maybe othere stuff) is copied, since dvinstall/install has been modified.
+# may need to run ./install directly
+
+- name: copy jhove config & config schema into glassfish domain config
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "/bin/cp /tmp/dvinstall/{{ item }} {{ dv_gf_root }}/glassfish/domains/{{ dv_gf_domain }}/config"
+  with_items:
+    - jhove.conf
+    - jhoveConfig.xsd
+
+- name: run glassfish-setup.sh
+  shell: "cd /tmp/dvinstall && nohup /bin/bash ./glassfish-setup.sh > /tmp/glassfish-setup.out 2> /tmp/glassfish-setup.err"
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  environment:
+    HOST_ADDRESS: "{{ dataverse_service_name }}"
+    GLASSFISH_ROOT: "{{ dv_gf_root }}"
+    GLASSFISH_DOMAIN: "{{ dv_gf_domain }}"
+    ASADMIN_OPTS: ""
+    FILES_DIR: "{{ dataverse_content_directory }}"
+    DB_NAME: "{{ dv_db_name }}"
+    DB_PORT: "{{ dv_db_port }}"
+    DB_HOST: "{{ dv_db_host }}"
+    DB_USER: "{{ dv_db_user }}"
+    DB_PASS: "{{ dv_db_pass }}"
+    RSERVE_HOST: "{{ rserve_host }}"
+    RSERVE_PORT: "{{ rserve_port }}"
+    RSERVE_USER: "{{ rserve_user }}"
+    RSERVE_PASS: "{{ rserve_pass }}"
+    SMTP_SERVER: "{{ dataverse_mailrelay }}"
+    MEM_HEAP_SIZE: "{{ dv_gf_memheap }}"
+
+- name: set logging format
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "{{ dv_gf_root }}/bin/asadmin set-log-file-format {{ dv_gf_logformat }}"
+
+- name: deploy dataverse WAR file (always deploy as application dataverse)
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "nohup {{ dv_gf_root }}/bin/asadmin deploy --name={{ dataverse_app_name }} /tmp/dvinstall/dataverse.war"

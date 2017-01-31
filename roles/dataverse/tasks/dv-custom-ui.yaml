@@ -1,0 +1,43 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# Branding & UI customization updates
+# NB: These are brittle and may need to be fixed between releases
+###############################################################################
+
+- name: a note on these customizations
+  debug: msg="These UI customizations are brittle and may need to be updated for new releases."
+
+- name: set some base directories for later use
+  set_fact:
+    dv_customization_directory: "ui-customization/dv-{{ instance_ui_customization_version }}"
+    dv_application_directory: "{{ dv_gf_root }}/glassfish/domains/{{ dv_gf_domain }}/applications/{{ dataverse_app_name }}"
+
+- name: copy new custom files to the web site
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  copy: src="{{ dv_customization_directory }}/{{ item.src }}"
+        dest="{{ dv_application_directory }}/{{ item.dest }}"
+        owner="{{ dv_gf_user }}" group="{{ dv_gf_user }}" mode=0644
+  with_items:
+    - { src: "instance_header.xhtml", dest: ""}
+    - { src: "images/", dest: "/resources/images"}
+
+
+- name: apply custom UI patches
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  patch: src="{{ dv_customization_directory }}/{{ item }}.patch"
+         basedir="{{ dv_application_directory }}"
+         remote_src=no
+  with_items:
+    - Bundle.properties
+    - dataverse_header.xhtml
+    - dataverse_template.xhtml
+
+
+- name: clean up custom UI /tmp files
+  file: name=/tmp/dv-custom-ui state=absent

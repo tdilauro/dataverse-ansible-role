@@ -1,0 +1,26 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+############################################################
+# Post Dataverse install -- custom settings
+############################################################
+
+# the ':BlockedApiPolicy' should be last, in case the value disallows anymore API calls
+- name: override some default settings
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: 'curl -X PUT -d "{{item.val}}" "{{ instance_api }}/admin/settings/{{item.prop}}"'
+  with_items:
+    - { prop: ":GoogleAnalyticsCode", val: "{{ dataverse_google_analytics_key }}", desc: "key for Google Analytics"}
+    - { prop: ":FooterCopyright" , val: "{{ dataverse_copyright_addon }}", desc: "addition to the default copyright statement"}
+    - { prop: ":SystemEmail", val: "{{ dataverse_service_email }}", desc: "instance email address"}
+    - { prop: ":Protocol", val: "doi", desc: "global identifier protocol"}
+    - { prop: ":DoiProvider", val: "{{ dv_doi_service }}", desc: "DOI service provider (EZID or DataCite)"}
+    - { prop: ":Authority", val: "{{ dv_doi_prefix }}", desc: "DOI prefix"}
+    - { prop: ":DoiSeparator,", val: "/", desc: "DOI separator. leave as slash (/)"}
+    - { prop: ":ShibEnabled", val: "{{ dv_shib }}", desc: "enable/disable shibboleth" }
+    - { prop: ":AllowSignUp", val: "{{ dataverse_allow_signups }}", desc: "don't allow self-signup"}
+    - { prop: ":BlockedApiEndpoints", val: "admin,test", desc: "APIs that are controlled"}
+    - { prop: ":BlockedApiPolicy", val: "localhost-only", desc: "control API access"}

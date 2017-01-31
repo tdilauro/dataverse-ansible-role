@@ -1,0 +1,39 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+######################################################################
+# Parse the metadata blocks to create Solr <fields> and <copyfields>
+######################################################################
+
+- name: parse metadata blocks (mdblocks) to get Solr copyFields
+  local_action: "shell {{ role_path }}/scripts/mdblock_parser.py -c {{ instance_mdblocks_dir }}/{{ item }}.tsv"
+  register: copyFields
+  run_once: true
+  become: false
+  with_items: "{{ instance_md_blocks }}"
+
+- name: add metadata <copyfield>s to Dataverse's Solr schema.xml
+  blockinfile:
+    dest: "{{ dv_solr_root }}/example/solr/collection1/conf/schema.xml"
+    state: present
+    insertafter: "^\\s*<copyField source=[^>]*>"
+    marker: "<!-- {mark} Dataverse copyfield MANAGED BLOCK -->"
+    content: "{{ copyFields.results | map(attribute='stdout') | list | join('\n') }}"
+
+
+- name: parse metadata blocks (mdblocks) for Solr fields
+  local_action: "shell {{ role_path }}/scripts/mdblock_parser.py -f {{ instance_mdblocks_dir }}/{{ item }}.tsv"
+  register: fields
+  run_once: true
+  become: false
+  with_items: "{{ instance_md_blocks }}"
+
+- name: add metadata <field>s to Dataverse's Solr schema.xml
+  blockinfile:
+    dest: "{{ dv_solr_root }}/example/solr/collection1/conf/schema.xml"
+    state: present
+    insertbefore: "^\\s*</fields>"
+    marker: "<!-- {mark} Dataverse field MANAGED BLOCK -->"
+    content: "{{ fields.results | map(attribute='stdout') | list | join('\n') }}"

@@ -1,0 +1,32 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+############################################################
+# Create users needed for future DV tasks
+############################################################
+
+############################################################
+# Solr user
+############################################################
+- name: create solr service group
+  group: name="{{ dv_solr_group }}" gid="{{ dv_solr_gid }}" state=present
+  when: dv_solr_group != "root"
+
+- name: create solr service account
+  user: name="{{ dv_solr_user }}" uid="{{ dv_solr_uid }}" group="{{ dv_solr_group }}"
+        createhome=no comment="Dataverse Solr user"
+  when: dv_solr_user != "root"
+
+############################################################
+# Glassfish user
+############################################################
+- name: create glassfish service group
+  group: name="{{ dv_gf_group }}" gid="{{ dv_gf_gid }}" state=present
+  when: dv_gf_group != "root"
+
+- name: create glassfish service account
+  user: name="{{ dv_gf_user }}" uid="{{ dv_gf_uid }}" group="{{ dv_gf_group }}"
+        comment="Dataverse Glassfish user"
+  when: dv_gf_user != "root"

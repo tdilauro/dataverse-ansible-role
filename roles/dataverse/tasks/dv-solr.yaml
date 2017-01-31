@@ -1,0 +1,89 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# install/enable OS pre-reqs (RedHat/CentOS 7)
+###############################################################################
+
+- name: ensure EPEL repository for RedHat/CentOS 7
+  yum: name=epel-release state=latest
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+
+###############################################################################
+# install pre-req packages (RedHat/CentOS 7)
+###############################################################################
+
+- name: install Solr pre-reqs for RedHat/CentOS 7
+  yum: name="{{item}}" state=latest
+  with_items:
+    - java-1.8.0-openjdk-devel
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+
+###############################################################################
+# SOLR install
+###############################################################################
+
+- name: download and unzip solr {{ dv_solr_version }}
+  unarchive: src="https://archive.apache.org/dist/lucene/solr/{{ dv_solr_version }}/solr-{{ dv_solr_version }}.tgz"
+        dest=/tmp copy=no
+
+- name: remove solr root directory
+  file: path="{{ dv_solr_root }}" state=absent
+
+- name: create solr root directory exists
+  file: path="{{ dv_solr_root }}" state=directory
+        owner=root group=root mode=0755
+
+- name: copy solr distro files into solr root
+  shell: "/bin/cp -r /tmp/solr-{{ dv_solr_version }}/* {{ dv_solr_root }}"
+
+- name: clean up solr distro files
+  file: path="/tmp/solr-{{ dv_solr_version }}" state=absent
+
+# per https://github.com/IQSS/dataverse/blob/develop/doc/sphinx-guides/source/installation/config.rst#id77
+- name: fix Solr's jetty config per configuration notes in https://github.com/IQSS/dataverse/blob/develop/doc/sphinx-guides/source/installation/config.rst#id77
+  lineinfile:
+    dest: "{{ dv_solr_root }}/example/etc/jetty.xml"
+    line: '            <Set name="requestHeaderSize">102400</Set>'
+    insertafter: <New class="org.eclipse.jetty.server.bio.SocketConnector">
+    state: present
+
+- name: solr user needs to own some of the subdirectories to run non-root
+  file: path="{{ item }}" state=directory recurse=yes
+        owner="{{ dv_solr_user }}" group="{{ dv_solr_group }}"
+  with_items:
+    - /usr/local/solr/example/logs/
+    - /usr/local/solr/example/solr-webapp/
+    - /usr/local/solr/example/solr/collection1/data/
+
+- name: get solr schema from the most recent Dataverse release that has a schema update
+  get_url: url="https://github.com/IQSS/dataverse/releases/download/v{{ dv_solr_schema_version }}/schema.xml"
+        dest="{{ dv_solr_root }}/example/solr/collection1/conf/"
+        owner="{{ dv_gf_user }}" group="{{ dv_gf_group }}"
+        mode=0644 force=yes
+
+###############################################################################
+# SOLR system service configuration (RedHat/CentOS 7)
+###############################################################################
+
+- name: install solr systemd conf file for RedHat/CentOS 7
+  template: src=solr.service.j2 dest=/usr/lib/systemd/system/solr.service
+        owner=root group=root mode=0644
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+- name: reload systemd
+  shell: systemctl daemon-reload
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
+
+- name: enable solr on boot, start solr
+  service: name=solr enabled=yes state=started
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"

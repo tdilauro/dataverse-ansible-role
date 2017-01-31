@@ -1,0 +1,48 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+############################################################
+# Post Dataverse deployment tasks
+############################################################
+
+- name: restart solr
+  service: name=solr state=restarted
+
+- name: stop glassfish with asadmin (systemctl seems not to work here)
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "nohup {{ dv_gf_root }}/bin/asadmin stop-domain {{ dv_gf_domain }}"
+
+- name: restart glassfish post-deployment
+  service: name=glassfish state=restarted
+
+- name: wait for glassfish to complete restart
+  wait_for:
+    port: 8009
+    state: present
+    timeout: "{{ dv_gf_wait_secs }}"
+
+- name: setup-all.sh kitchen sink configuration.
+  shell: "cd /tmp/dvinstall && /bin/bash ./setup-all.sh > /tmp/setup-all.out 2>&1"
+
+- name: populate reference data
+  shell: "psql -U {{ dv_db_user }} -h {{ dv_db_host }} -d {{ dv_db_name }} -f /tmp/dvinstall/reference_data.sql"
+  environment:
+    PGPASSWORD: "{{ dv_db_pass }}"
+
+- name: set log levels
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  shell: "{{ dv_gf_root }}/bin/asadmin set-log-levels {{ item }}"
+  with_items:
+    - org.glassfish.grizzly.http.server.util.RequestUtils=SEVERE
+
+- name: open firewall for https (443) and http (80) services on RedHat / CentOS 7
+  firewalld: zone=public service={{item}} state=enabled immediate=yes permanent=yes
+  with_items:
+    - https
+    - http
+  when: ansible_os_family == "RedHat" and
+        ansible_distribution_major_version == "7"
