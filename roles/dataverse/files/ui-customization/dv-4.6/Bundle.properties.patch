@@ -4,7 +4,7 @@
 +# instance branding parameters
 +instance_branding_header=true
 +instance_branding_footer=false
-+instanceTextLink=http://dmp.data.jhu.edu/
++instanceTextLink=http://dms.data.jhu.edu/
 +instanceTextFull=Johns Hopkins University Data Management Services
 +instanceTextShort=JHUDMS
 +instanceTextFullClasses=hidden-xs hidden-sm
