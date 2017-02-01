@@ -26,7 +26,7 @@ dataverse_google_analytics_key: "{{ google_analytics_key_protected }}"
 
 # DOI service (uncomment these for instances planned for production)
 #dv_doi_service: EZID
-#dv_doi_prefix: "10.7281"
+#dv_doi_prefix: "10.7281/T1"
 #dv_doi_user: "{{ dv_doi_user_protected }}"
 #dv_doi_pass: "{{ dv_doi_pass_protected }}"
 
