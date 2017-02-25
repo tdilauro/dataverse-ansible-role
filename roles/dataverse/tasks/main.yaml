@@ -3,6 +3,7 @@
 
 ---
 
+- include: mailer-config.yaml
 - include: dv-prereqs.yaml
 - include: dv-shib.yaml
 - include: dv-httpd.yaml

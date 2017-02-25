@@ -16,5 +16,6 @@
     - VAULT.yaml
   vars:
     load_mdblocks: true
+    mail_relay: smtp.johnshopkins.edu
   roles:
     - role: dataverse

@@ -1,0 +1,39 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# install/enable mailer pre-reqs (RedHat/CentOS 7)
+###############################################################################
+
+- name: Ensure postfix is installed (RedHat/CentOS)
+  yum: name=postfix state=installed
+  when: ansible_os_family == 'RedHat'
+
+###############################################################################
+# update configuration
+###############################################################################
+
+- name: configure mail relay
+  lineinfile:
+    dest: "{{ postfix_main_config_file }}"
+    state: present
+    regexp: '^\s*relayhost ='
+    insertafter: '^\s*#\s*relayhost\s*='
+    line: "relayhost = {{ mail_relay }}"
+
+- name: configure mailer hostname
+  lineinfile:
+    dest: "{{ postfix_main_config_file }}"
+    state: present
+    regexp: '^\s*myhostname\s*='
+    insertafter: '^\s*#\s*myhostname\s*='
+    line: "myhostname = {{ inventory_hostname }}"
+
+###############################################################################
+# enable/restart mail server to pick up configuration changes
+###############################################################################
+
+- name: start postfix and enable on system startup
+  service: name=postfix enabled=yes state=restarted

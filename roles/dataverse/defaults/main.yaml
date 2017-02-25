@@ -123,3 +123,9 @@ rserve_host: "{{ dataverse_host_address }}"
 rserve_user: rserve
 rserve_pass: "{{ rserve_pass_protected }}"
 rserve_port: 6311
+
+###############################################################################
+# Mail configuration
+###############################################################################
+
+postfix_main_config_file: "/etc/postfix/main.cf"
