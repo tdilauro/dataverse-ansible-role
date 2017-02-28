@@ -4,40 +4,45 @@
 ---
 
 ###############################################################################
-# Branding & UI customization updates
-# NB: These are brittle and may need to be fixed between releases
+# Update UI settings
 ###############################################################################
 
-- name: a note on these customizations
-  debug: msg="These UI customizations are brittle and may need to be updated for new releases."
+- name: configure admin settings that drive UI customizations
+  become: yes
+  become_user: "{{ dv_gf_user }}"
+  uri:
+    url: "{{ instance_api }}/admin/settings/{{item.prop}}"
+    body: "{{ item.val }}"
+    method: PUT
+    validate_certs: no
+  with_items:
+    - { prop: ":instanceBrandingHeader", val: "{{ dv_ui_use_custom_header |lower }}",
+        desc: "whether or not to use a branding header" }
+    - { prop: ":instanceBrandingFooter", val: "{{ dv_ui_use_custom_footer |lower }}",
+        desc: "whether or not to use a branding footer" }
+    - "{{ dv_ui_custom_values }}"
+    - "{{ dv_ui_custom_css_classes }}"
+
+
+###############################################################################
+# Copy custom files into the application
+###############################################################################
 
 - name: set some base directories for later use
   set_fact:
-    dv_customization_directory: "ui-customization/dv-{{ instance_ui_customization_version }}"
     dv_application_directory: "{{ dv_gf_root }}/glassfish/domains/{{ dv_gf_domain }}/applications/{{ dataverse_app_name }}"
 
-- name: copy new custom files to the web site
+- name: copy local custom files into the web app
   become: yes
   become_user: "{{ dv_gf_user }}"
-  copy: src="{{ dv_customization_directory }}/{{ item.src }}"
+  copy: src="ui-customization/{{ item.src }}"
         dest="{{ dv_application_directory }}/{{ item.dest }}"
         owner="{{ dv_gf_user }}" group="{{ dv_gf_user }}" mode=0644
   with_items:
-    - { src: "instance_header.xhtml", dest: ""}
-    - { src: "images/", dest: "/resources/images"}
+    - { src: "common/images/", dest: "/resources/images"}
 
-
-- name: apply custom UI patches
-  become: yes
-  become_user: "{{ dv_gf_user }}"
-  patch: src="{{ dv_customization_directory }}/{{ item }}.patch"
-         basedir="{{ dv_application_directory }}"
-         remote_src=no
-  with_items:
-    - Bundle.properties
-    - dataverse_header.xhtml
-    - dataverse_template.xhtml
-
+# (Temporary) Some
+- include: dv-custom-ui-overrides.yaml
 
 - name: clean up custom UI /tmp files
   file: name=/tmp/dv-custom-ui state=absent
