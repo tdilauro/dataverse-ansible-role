@@ -1,0 +1,34 @@
+# -*- mode: yaml -*-
+# vi: set ft=yaml :
+
+---
+
+###############################################################################
+# These tasks are needed until such time as these/similar customizations
+# make it into a Dataverse release.
+###############################################################################
+
+- name: set some base directories for UI overrides
+  set_fact:
+    dv_repo_dir: "/tmp/dataverse/repo"
+    dv_repo_webapp_dir: "src/main/webapp"
+
+- name: (TEMPORARY) clone the dataverse repository with UI changes to overwrite distro
+  git:
+    repo: "{{ dv_ui_repo.url }}"
+    dest: "{{ dv_repo_dir }}"
+    version: "{{ dv_ui_repo.branch }}"
+
+- name: (TEMPORARY) copy relevant updated UI files
+  copy: src="{{ dv_repo_dir }}/{{ dv_repo_webapp_dir}}/{{ item }}"
+        dest="{{ dv_application_directory }}/{{ item }}"
+        owner="{{ dv_gf_user }}" group="{{ dv_gf_group }}" mode=0644
+        remote_src=true
+  with_items:
+    - "instance_header.xhtml"
+    - "resources/css/instance-header-overrides.css"
+    - "dataverse_header.xhtml"
+    - "dataverse_template.xhtml"
+
+- name: (TEMPORARY) remove cloned dataverse repository
+  file: path="{{ dv_repo_dir }}" state=absent

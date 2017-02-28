@@ -124,6 +124,45 @@ rserve_user: rserve
 rserve_pass: "{{ rserve_pass_protected }}"
 rserve_port: 6311
 
+
+###############################################################################
+# Settings for UI instance branding configuration
+# When any values are changed to override these variables, all
+# properties associated with that variable will be overriden. So
+# all desired values must be re-specified.
+###############################################################################
+
+dv_ui_use_custom_header: false
+dv_ui_use_custom_footer: false
+
+dv_ui_custom_values:
+  - { prop: ":instanceLogoFile", val: "http://dataverse.org/files/dataverseorg/files/dv-rings-tranparent.png",
+      desc: "URL (relative or absolute) for instance logo file" }
+# If ":instanceBrandingHeader" is set to true, the following properties should
+# should be set elsewhere.
+#  - { prop: ":instanceNameFull", val: "set :instanceNameFull",
+#      desc: "Full branded name for this Dataverse instance" }
+#  - { prop: ":instanceNameShort", val: "set :instanceNameShort",
+#      desc: "Short branded name for this Dataverse instance" }
+#  - { prop: ":instanceTextFull", val: "set :instanceTextFull",
+#      desc: "Full upper right-hand text for wider window" }
+#  - { prop: ":instanceTextShort", val: "set :instanceTextShort",
+#      desc: "Short upper right-hand text for narrow window" }
+#  - { prop: ":instanceTextLink", val: "set :instanceTextLink",
+#      desc: "Link for click on upper right-hand branding text" }
+#  - { prop: ":instanceLogoLink", val: "http://dataverse.example.org/",
+#      desc: "Link for click on instance branding logo" }
+dv_ui_custom_css_classes:
+  - { prop: ":instanceNameFullClasses", val: "hidden-xs",
+      desc: "hide the instance fullname when window too narrow" }
+  - { prop: ":instanceNameShortClasses", val: "hidden-sm hidden-md hidden-lg hidden-xl",
+      desc: "hide the short version of the when window not too narrow for wide text" }
+  - { prop: ":instanceTextFullClasses", val: "hidden-xs hidden-sm",
+      desc: "hide the long version of right-hand text when window too narrow" }
+  - { prop: ":instanceTextShortClasses", val: "hidden-md hidden-lg hidden-xl",
+      desc: "hide the short version of right-hand text when window not too narrow for long text" }
+
+
 ###############################################################################
 # Mail configuration
 ###############################################################################
